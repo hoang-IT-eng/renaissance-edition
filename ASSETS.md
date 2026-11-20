@@ -18,3 +18,10 @@ style. No assets, code or copy were taken from shopify.com.
 | web/assets/vendor/gsap.min.js | 72,214 | GSAP 3.12.5 |
 | web/assets/vendor/ScrollTrigger.min.js | 43,380 | GSAP ScrollTrigger 3.12.5 |
 | web/assets/vendor/lenis.min.js | 12,790 | Lenis 1.1.14 |
+| web/assets/vendor/three.min.js | 603,445 | Three.js r128 (living-painting engine) |
+| web/images/depth/hero.png | 94,699 | Depth map (Depth Anything v2, local) |
+| web/images/depth/sidekick.png | 73,245 | Depth map |
+| web/images/depth/agentic.png | 94,054 | Depth map |
+| web/images/depth/retail.png | 80,365 | Depth map |
+| web/images/depth/checkout.png | 109,600 | Depth map |
+| web/images/depth/developer.png | 85,020 | Depth map |
