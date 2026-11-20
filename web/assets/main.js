@@ -381,20 +381,7 @@ document.getElementById("beanieBuy").addEventListener("click", () => {
   document.getElementById("beanieBought").hidden = false; audio.tap();
 });
 
-/* ── Tier B+ · the 3D beanie also opens the shop panel ─────── */
-document.addEventListener("beanie3d", () => { panel.hidden = false; audio.tap(); });
-
-/* hint shown inside the Checkout head once the GL engine boots */
-(() => {
-  const head = document.querySelector("#ch-checkout .chapter-head");
-  if (!head) return;
-  const h = document.createElement("p");
-  h.className = "prop-hint";
-  h.textContent = "the beanie, rebuilt in 3D — drag to spin it, click it to shop ↑";
-  head.appendChild(h);
-})();
-
-/* ── Tier B+ · Sidekick playground (simulated, on purpose) ──── */
+/* ── Sidekick playground (simulated, on purpose) ────────────── */
 (() => {
   const body = document.querySelector("#ch-sidekick .chapter-body");
   if (!body) return;
@@ -442,7 +429,6 @@ document.addEventListener("beanie3d", () => { panel.hidden = false; audio.tap();
   document.addEventListener("mouseover", e => {
     const t = e.target;
     if (!t.closest) return;
-    if (t.closest(".gl-canvas")) { label.textContent = "Drag"; cur.classList.add("big"); return; }
     const tagged = t.closest("[data-cursor]");
     if (tagged) { label.textContent = tagged.dataset.cursor; cur.classList.add("big"); }
     else cur.classList.remove("big");
