@@ -43,9 +43,11 @@
     "void main(){",
     "  vec2 uv = vUv * uCoverScale + uCoverOff;",
     "  float d = texture2D(uDepth, uv).r;",
-    "  float depthC = d - 0.42;",
-    "  vec2 sway = vec2(sin(uTime * 0.23), cos(uTime * 0.17)) * 0.010;",
-    "  vec2 shift = (uMouse * (0.030 + uVel * 0.020) + sway) * depthC * 2.2;",
+    /* remap: backgrounds stay near zero, mid-tone subjects (where the
+       figures live, d ~ 0.3-0.5) move clearly, extreme foreground capped */
+    "  float depthC = clamp(pow(d, 1.35) * 1.15 - 0.10, -0.25, 0.60);",
+    "  vec2 sway = vec2(sin(uTime * 0.23), cos(uTime * 0.17)) * 0.008;",
+    "  vec2 shift = (uMouse * vec2(0.046, 0.028) * (1.0 + uVel * 0.7) + sway) * depthC * 2.0;",
     "  vec3 col = texture2D(uTex, uv + shift).rgb;",
     /* travelling warm light, caught more by near surfaces */
     "  float band = 0.5 + 0.62 * sin(uTime * 0.10);",
@@ -171,13 +173,18 @@
   hosts.forEach(function (h) { io.observe(h.el); });
 
   var clock = new THREE.Clock();
-  var velSm = 0;
+  var velSm = 0, tAcc = 0;
   function tick() {
     requestAnimationFrame(tick);
     if (!current || !current.ready || !current.visible) return;
-    var t = clock.getElapsedTime();
-    mouse.x += (mouse.tx - mouse.x) * 0.045;
-    mouse.y += (mouse.ty - mouse.y) * 0.045;
+    var dt = Math.min(clock.getDelta(), 0.1);
+    tAcc += dt;
+    var t = tAcc;
+    /* frame-rate independent smoothing: converges in ~0.5 s even
+       on slow devices where rAF runs at a handful of fps */
+    var k = 1 - Math.exp(-dt * 5.0);
+    mouse.x += (mouse.tx - mouse.x) * k;
+    mouse.y += (mouse.ty - mouse.y) * k;
     var vel = Math.min(Math.abs(window.__scrollVel || 0) / 2600, 1);
     velSm += (vel - velSm) * 0.06;
     if (current.reveal < 1) current.reveal = Math.min(1, current.reveal + 0.02);
@@ -187,8 +194,9 @@
     u.uVel.value = velSm;
     u.uReveal.value = current.reveal;
     var pos = dustGeo.attributes.position.array;
+    var dustStep = Math.max(dt, 0.008) * 60;
     for (var i = 0; i < DUST_N; i++) {
-      pos[i * 3 + 1] += dustSeed[i] * 0.016;
+      pos[i * 3 + 1] += dustSeed[i] * 0.016 * dustStep;
       pos[i * 3] += Math.sin(t * 0.4 + i) * 0.0006;
       if (pos[i * 3 + 1] > 1.05) pos[i * 3 + 1] = -1.05;
     }
