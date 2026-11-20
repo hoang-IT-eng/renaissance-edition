@@ -2,9 +2,13 @@
 
 A study recreation of [Shopify Editions · Winter '26](https://www.shopify.com/editions/winter2026)
 ("The RenAIssance Edition"), built with the **creative-web-replicator** skill
-at **Tier C+**: a DOM/CSS/GSAP rebuild (typography, palette, layout, section
-flow, scroll choreography) plus a parallax painting engine — not a mirror of
-Shopify's production bundle or artwork.
+at **Tier B+**: a DOM/CSS/GSAP rebuild (typography, palette, layout, section
+flow, scroll choreography) plus a real Three.js engine — one shared canvas
+re-parented across showcases, an authored 3D prop built from primitives for
+the hero and every chapter (armillary sphere, glass globe, a clickable 3D
+beanie, a coin fountain…), drag-to-spin, scroll-velocity coupling and a
+simulated Sidekick prompt playground — not a mirror of Shopify's production
+bundle, models or artwork.
 
 ## What was studied from the original
 - Black opening, then a full-screen painting as a book's title page

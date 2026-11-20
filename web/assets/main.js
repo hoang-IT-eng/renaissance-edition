@@ -179,7 +179,7 @@ tocM.innerHTML = CHAPTERS.map(ch =>
 host.innerHTML = CHAPTERS.map(ch => `
 <section class="chapter" id="ch-${ch.id}" data-ch="${ch.id}">
   <div class="chapter-head">
-    <div class="painting" data-parallax><img src="${ch.painting}" alt="" loading="lazy" style="object-position:${ch.pos};${ch.filter?`filter:${ch.filter};`:""}"></div>
+    <div class="painting" data-parallax data-cursor="View"><img src="${ch.painting}" alt="" loading="lazy" style="object-position:${ch.pos};${ch.filter?`filter:${ch.filter};`:""}"></div>
     <div class="shade"></div>
     <div class="chapter-rn" aria-hidden="true">${ch.rn}</div>
     ${ch.beanie ? `<button class="beanie-hotspot" id="beanieHotspot" type="button" aria-label="A hidden shoppable surprise — the pink beanie"><span class="hint">psst — the beanie is shoppable</span></button>` : ""}
@@ -195,7 +195,7 @@ host.innerHTML = CHAPTERS.map(ch => `
       <p class="kicker">${ch.title}</p>
       <h3 class="group-head rv"><span class="dropcap">${esc(g.head.charAt(0))}</span>${esc(g.head.slice(1))}</h3>
       ${g.cards.length ? `<div class="cards">${g.cards.map(c => `
-        <article class="card rv">
+        <article class="card rv" data-cursor="Read">
           <div class="card-chrome"><i></i><i></i><i></i><span class="card-url">admin · ${ch.id}/${c.t.toLowerCase().replace(/[^a-z0-9]+/g,"-")}</span></div>
           <div class="card-art" data-glyph="${esc(c.glyph)}" style="background:${c.art}"></div>
           <div class="card-body"><h4>${esc(c.t)}</h4><p>${esc(c.d)}</p><a class="card-link" href="#ch-${ch.id}">Read the update →</a></div>
@@ -233,6 +233,17 @@ if (!motionDisabled() && window.Lenis && window.gsap) {
   gsap.registerPlugin(ScrollTrigger);
   lenis = new Lenis({ duration: 1.15, easing: t => 1.001 - Math.pow(2, -10 * t) });
   lenis.on("scroll", ScrollTrigger.update);
+
+  /* scroll velocity feeds the 3D engine and lends the chapter
+     titles a whisper of skew while the page is moving fast */
+  let skewReset;
+  ScrollTrigger.create({ onUpdate: self => {
+    window.__scrollVel = self.getVelocity();
+    const v = gsap.utils.clamp(-4, 4, self.getVelocity() / -350);
+    gsap.to(".chapter-title", { skewY: v, duration: .35, overwrite: "auto", ease: "power2.out" });
+    clearTimeout(skewReset);
+    skewReset = setTimeout(() => gsap.to(".chapter-title", { skewY: 0, duration: .6, ease: "power3.out" }), 150);
+  }});
   gsap.ticker.add(t => lenis.raf(t * 1000));
   gsap.ticker.lagSmoothing(0);
 
@@ -369,3 +380,71 @@ panel.querySelector(".beanie-close").addEventListener("click", () => panel.hidde
 document.getElementById("beanieBuy").addEventListener("click", () => {
   document.getElementById("beanieBought").hidden = false; audio.tap();
 });
+
+/* ── Tier B+ · the 3D beanie also opens the shop panel ─────── */
+document.addEventListener("beanie3d", () => { panel.hidden = false; audio.tap(); });
+
+/* hint shown inside the Checkout head once the GL engine boots */
+(() => {
+  const head = document.querySelector("#ch-checkout .chapter-head");
+  if (!head) return;
+  const h = document.createElement("p");
+  h.className = "prop-hint";
+  h.textContent = "the beanie, rebuilt in 3D — drag to spin it, click it to shop ↑";
+  head.appendChild(h);
+})();
+
+/* ── Tier B+ · Sidekick playground (simulated, on purpose) ──── */
+(() => {
+  const body = document.querySelector("#ch-sidekick .chapter-body");
+  if (!body) return;
+  const PROMPTS = [
+    ["Write a product description for my new candle", "Sidekick drafts it in your brand voice, pulls the scent notes straight from your product data, and queues it for approval. Thirty seconds, not thirty minutes."],
+    ["Which products are about to stock out?", "Pulse flags three SKUs trending to zero within nine days at current velocity — and the purchase orders are already drafted."],
+    ["Build me a BFCM discount campaign", "Done: the campaign is assembled, last year's buyers are segmented, and the email and SMS copy are written and waiting for your sign-off."],
+    ["Why did sales dip last Tuesday?", "Traffic held; conversion fell 18% after the promo banner expired at noon. Here's the chart — not a spreadsheet."],
+    ["Turn this photo into a product listing", "Vision reads the image, writes the title, tags and alt text, prices it against your catalogue, and files it in the right collection."],
+    ["Who are my best customers this quarter?", "A live report, grouped by lifetime value and pinned to your Home. The top decile buys 4.1× more often than the median."]
+  ];
+  const wrap = document.createElement("div");
+  wrap.className = "play";
+  wrap.innerHTML =
+    '<p class="kicker">Try it · Sidekick, simulated</p>' +
+    '<h3 class="play-head">Ask it <span class="script">anything</span></h3>' +
+    '<div class="chips">' + PROMPTS.map((p, i) => '<button type="button" class="chip" data-i="' + i + '">' + p[0] + "</button>").join("") + "</div>" +
+    '<div class="play-panel"><p class="play-q" hidden></p>' +
+    '<p class="play-a"><span class="play-a-text">Pick a prompt above — Sidekick answers from your store\u2019s own data. A simulation, in the spirit of the edition.</span><span class="caret" aria-hidden="true"></span></p></div>';
+  body.insertBefore(wrap, body.querySelector(".group"));
+  const q = wrap.querySelector(".play-q"), aText = wrap.querySelector(".play-a-text");
+  let timer = null;
+  wrap.querySelectorAll(".chip").forEach(chip => chip.addEventListener("click", () => {
+    const pair = PROMPTS[+chip.dataset.i];
+    wrap.querySelectorAll(".chip").forEach(c => c.classList.toggle("active", c === chip));
+    q.hidden = false; q.textContent = "\u201C" + pair[0] + "\u201D";
+    audio.tap();
+    clearInterval(timer);
+    if (motionDisabled()) { aText.textContent = pair[1]; return; }
+    aText.textContent = ""; let i = 0;
+    timer = setInterval(() => { aText.textContent = pair[1].slice(0, ++i); if (i >= pair[1].length) clearInterval(timer); }, 13);
+  }));
+})();
+
+/* ── Tier B+ · gold cursor with labels (fine pointers only) ── */
+(() => {
+  const cur = document.getElementById("cursor");
+  if (!cur || motionDisabled() || !window.gsap) return;
+  if (!window.matchMedia("(hover:hover) and (pointer:fine)").matches) return;
+  document.body.classList.add("has-cursor");
+  const label = cur.querySelector("span");
+  const xTo = gsap.quickTo(cur, "x", { duration: .45, ease: "power3.out" });
+  const yTo = gsap.quickTo(cur, "y", { duration: .45, ease: "power3.out" });
+  addEventListener("pointermove", e => { xTo(e.clientX); yTo(e.clientY); });
+  document.addEventListener("mouseover", e => {
+    const t = e.target;
+    if (!t.closest) return;
+    if (t.closest(".gl-canvas")) { label.textContent = "Drag"; cur.classList.add("big"); return; }
+    const tagged = t.closest("[data-cursor]");
+    if (tagged) { label.textContent = tagged.dataset.cursor; cur.classList.add("big"); }
+    else cur.classList.remove("big");
+  });
+})();
