@@ -40,15 +40,28 @@
     "uniform float uReveal;",   /* 0..1 fade-in */
     "uniform vec2 uCoverScale;",/* cover-fit uv window */
     "uniform vec2 uCoverOff;",
+    "uniform vec2 uTexel;",
     "void main(){",
     "  vec2 uv = vUv * uCoverScale + uCoverOff;",
     "  float d = texture2D(uDepth, uv).r;",
+    /* at hard depth edges (silhouettes) a single-layer shift tears —
+       a detached sliver of the figure smears into the gap. Measure the
+       local depth gradient and ease the shift off exactly there. */
+    "  float gx = texture2D(uDepth, uv + vec2(uTexel.x, 0.0)).r - texture2D(uDepth, uv - vec2(uTexel.x, 0.0)).r;",
+    "  float gy = texture2D(uDepth, uv + vec2(0.0, uTexel.y)).r - texture2D(uDepth, uv - vec2(0.0, uTexel.y)).r;",
+    "  float edge = clamp((abs(gx) + abs(gy)) * 7.0, 0.0, 1.0);",
     /* remap: backgrounds stay near zero, mid-tone subjects (where the
        figures live, d ~ 0.3-0.5) move clearly, extreme foreground capped */
     "  float depthC = clamp(pow(d, 1.35) * 1.15 - 0.10, -0.25, 0.60);",
     "  vec2 sway = vec2(sin(uTime * 0.23), cos(uTime * 0.17)) * 0.008;",
-    "  vec2 shift = (uMouse * vec2(0.046, 0.028) * (1.0 + uVel * 0.7) + sway) * depthC * 2.0;",
-    "  vec3 col = texture2D(uTex, uv + shift).rgb;",
+    "  vec2 shift = (uMouse * vec2(0.040, 0.024) * (1.0 + uVel * 0.7) + sway) * depthC * 2.0 * (1.0 - edge * 0.88);",
+    /* occlusion check: a background pixel whose shifted sample lands on
+       a much nearer surface would smear the figure into the gap —
+       pull its sample back toward the unshifted position */
+    "  vec2 suv = uv + shift;",
+    "  float dS = texture2D(uDepth, suv).r;",
+    "  if (dS > d + 0.15) suv = uv + shift * 0.15;",
+    "  vec3 col = texture2D(uTex, suv).rgb;",
     /* travelling warm light, caught more by near surfaces */
     "  float band = 0.5 + 0.62 * sin(uTime * 0.10);",
     "  float sweep = smoothstep(0.42, 0.0, abs(uv.x * 0.82 + uv.y * 0.30 - band)) * 0.085 * (0.30 + d);",
@@ -131,10 +144,12 @@
           uMouse: { value: new THREE.Vector2(0, 0) },
           uTime: { value: 0 }, uVel: { value: 0 }, uReveal: { value: 0 },
           uCoverScale: { value: new THREE.Vector2(1, 1) },
-          uCoverOff: { value: new THREE.Vector2(0, 0) }
+          uCoverOff: { value: new THREE.Vector2(0, 0) },
+          uTexel: { value: new THREE.Vector2(1 / 1600, 1 / 900) }
         }
       });
       h.texSize = [tex.image.width, tex.image.height];
+      h.mat.uniforms.uTexel.value.set(1 / dep.image.width, 1 / dep.image.height);
       h.ready = true;
       if (current === h) swap(h);
       resize();
