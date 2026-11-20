@@ -116,7 +116,7 @@ main{ margin-left:var(--rail-w); }
 #stars{ position:absolute; inset:0; width:100%; height:100%; pointer-events:none; }
 .hero-shade{ position:absolute; inset:0; background:radial-gradient(ellipse at 50% 42%, transparent 30%, rgba(4,6,5,.38) 78%, rgba(4,6,5,.72) 100%); pointer-events:none; }
 .hero-spark{
-  position:absolute; left:50.5%; top:36.5%; width:10px; height:10px; margin:-5px;
+  position:absolute; left:50%; top:29%; width:10px; height:10px; margin:-5px;
   border-radius:50%; background:#FFE9B0; box-shadow:0 0 22px 8px rgba(255,214,120,.75);
   animation:spark 2.6s ease-in-out infinite; pointer-events:none;
 }

@@ -25,3 +25,15 @@ style. No assets, code or copy were taken from shopify.com.
 | web/images/depth/retail.png | 80,365 | Depth map |
 | web/images/depth/checkout.png | 109,600 | Depth map |
 | web/images/depth/developer.png | 85,020 | Depth map |
+
+## Hero motion (2026-11-21)
+- `web/images/video/hero-loop.mp4` (974,065 B) + `hero-loop.webm` (1,136,713 B) — 9 s seamless
+  crossfade loop, AI-animated from an AI-regenerated hero artwork (the video model redrew the
+  painting: teal cloud scene, same two figures / pink cup / bags / skateboard). User reviewed the
+  clip and chose it as the new hero over the original starfield painting.
+- `web/images/hero.jpg` is now the loop's poster frame (1248x704, 126,405 B); the original
+  painting is preserved at `depth/hero-original.jpg` (staging only).
+- `web/images/depth/hero.png` regenerated for the new artwork (72,059 B).
+- Engine: hero host uses a THREE.VideoTexture (data-video attr), so the depth-parallax shader
+  displaces the *moving* video; video pauses off-screen; save-data / load failure falls back
+  to the poster image texture.

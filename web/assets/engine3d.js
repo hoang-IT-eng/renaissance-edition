@@ -110,8 +110,10 @@
     var name = src.split("/").pop().replace(/\.(jpg|jpeg|png)$/i, "");
     hosts.push({
       el: el, img: img, src: src, depthSrc: "images/depth/" + name + ".png",
+      videoBase: el.getAttribute("data-video"),
       pos: img.style.objectPosition || "50% 50%",
-      visible: false, ready: false, failed: false, mat: null, reveal: 0
+      visible: false, ready: false, failed: false, mat: null, reveal: 0,
+      video: null, isVideo: false
     });
   }
   var heroP = document.querySelector(".hero-painting"); if (heroP) addHost(heroP);
@@ -130,6 +132,7 @@
 
   function activate(h) {
     if (current === h) return;
+    if (current && current.video) current.video.pause();
     current = h;
     h.el.appendChild(canvas);
     resize();
@@ -137,6 +140,7 @@
     if (h.failed) return;
     var pending = 2, tex = null, dep = null;
     function done() {
+      h.tex = tex;
       if (--pending) return;
       h.mat = new THREE.ShaderMaterial({
         vertexShader: VERT, fragmentShader: FRAG,
@@ -149,13 +153,32 @@
           uTexel: { value: new THREE.Vector2(1 / 1600, 1 / 900) }
         }
       });
-      h.texSize = [tex.image.width, tex.image.height];
+      h.texSize = [tex.image.videoWidth || tex.image.width, tex.image.videoHeight || tex.image.height];
       h.mat.uniforms.uTexel.value.set(1 / dep.image.width, 1 / dep.image.height);
       h.ready = true;
       if (current === h) swap(h);
       resize();
     }
-    loader.load(h.src, function (t) { tex = t; done(); }, undefined, function () { h.failed = true; });
+    var saveData = !!(navigator.connection && navigator.connection.saveData);
+    if (h.videoBase && !saveData) {
+      var v = document.createElement("video");
+      v.muted = true; v.loop = true; v.playsInline = true; v.autoplay = true; v.preload = "auto";
+      v.setAttribute("muted", ""); v.setAttribute("playsinline", "");
+      v.innerHTML = '<source src="' + h.videoBase + '.webm" type="video/webm"><source src="' + h.videoBase + '.mp4" type="video/mp4">';
+      var settled = false;
+      v.addEventListener("canplay", function () {
+        if (settled) return; settled = true;
+        h.video = v; h.isVideo = true;
+        var p = v.play(); if (p && p.catch) p.catch(function () {});
+        tex = new THREE.VideoTexture(v); done();
+      });
+      setTimeout(function () {
+        if (!settled) { settled = true; loader.load(h.src, function (t) { tex = t; done(); }, undefined, function () { h.failed = true; }); }
+      }, 7000);
+      v.load();
+    } else {
+      loader.load(h.src, function (t) { tex = t; done(); }, undefined, function () { h.failed = true; });
+    }
     loader.load(h.depthSrc, function (t) { dep = t; done(); }, undefined, function () { h.failed = true; });
   }
   var plane = null;
@@ -192,6 +215,11 @@
   var velSm = 0, tAcc = 0;
   function tick() {
     requestAnimationFrame(tick);
+    if (current && current.video) {
+      if (current.visible && current.video.paused) { var pv = current.video.play(); if (pv && pv.catch) pv.catch(function () {}); }
+      if (!current.visible && !current.video.paused) current.video.pause();
+    }
+    if (current && current.isVideo && current.tex) current.tex.needsUpdate = true;
     if (!current || !current.ready || !current.visible) return;
     var dt = Math.min(clock.getDelta(), 0.1);
     tAcc += dt;
@@ -219,6 +247,7 @@
     dustGeo.attributes.position.needsUpdate = true;
     renderer.render(scene, camera);
   }
+  window.__glHosts = hosts;
   document.body.classList.add("gl-on");
   tick();
 })();
